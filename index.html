@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Тихая роща</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: a stage with the growing tree and timer on the left, the tree picker on the right, the forest you have planted below. */
+:root {
+  --bg: #e8f0ed;
+  --surface: #f6faf8;
+  --ink: #12302a;
+  --muted: #5a7770;
+  --line: #cfdfd9;
+  --accent: #23795a;
+  --accent-ink: #ffffff;
+  --sky1: #d3e9f1;
+  --sky2: #f2f8ee;
+  --sun: #ffe9a8;
+  --ground: #8fc08a;
+  --ground2: #74ab74;
+  --danger: #b4452f;
+  --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1815; --surface: #132520; --ink: #e2f0ea; --muted: #8fb0a5; --line: #234038;
+    --accent: #6fd0a0; --accent-ink: #082018; --sky1: #12303a; --sky2: #1b3a33; --sun: #3d4d3a;
+    --ground: #2e6b4b; --ground2: #265a3f; --danger: #f08a72;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1815; --surface: #132520; --ink: #e2f0ea; --muted: #8fb0a5; --line: #234038;
+  --accent: #6fd0a0; --accent-ink: #082018; --sky1: #12303a; --sky2: #1b3a33; --sun: #3d4d3a;
+  --ground: #2e6b4b; --ground2: #265a3f; --danger: #f08a72;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.45; padding-inline: 16px; padding-block: 20px 48px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(28px, 5vw, 40px); margin: 0; letter-spacing: -0.02em; line-height: 1; }
+.sub { color: var(--muted); margin: 6px 0 0; }
+.stats { display: flex; gap: 20px; }
+.stat { display: flex; flex-direction: column; }
+.stat b { font-family: var(--font-display); font-size: 24px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat span { color: var(--muted); font-size: 13px; }
+.main { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 800px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
+.stage { padding: 0; overflow: hidden; }
+.sky { background: radial-gradient(circle at 78% 22%, var(--sun) 0 9%, transparent 9.5%), linear-gradient(var(--sky1), var(--sky2)); aspect-ratio: 1 / 0.82; display: flex; align-items: flex-end; justify-content: center; }
+.sky svg { width: min(100%, 440px); height: auto; display: block; }
+.panel { padding: 18px; display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center; }
+.clock { font-family: var(--font-display); font-weight: 800; font-size: clamp(54px, 12vw, 84px); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.msg { color: var(--muted); min-height: 1.5em; margin: 0; }
+.bar { width: 100%; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.chip { border: 1px solid var(--line); background: transparent; padding: 7px 14px; border-radius: 99px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip:disabled, .tree:disabled, .custom input:disabled { opacity: 0.45; cursor: not-allowed; }
+.custom { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; }
+.custom input { width: 64px; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; font-variant-numeric: tabular-nums; }
+.go { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 14px; padding: 14px 28px; font-weight: 600; font-size: 17px; min-width: 240px; }
+.go.stop { background: transparent; color: var(--danger); border: 2px solid var(--danger); }
+h2 { font-family: var(--font-display); font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+.hint { color: var(--muted); margin: 0 0 14px; font-size: 14px; }
+.picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.tree { background: var(--bg); border: 2px solid transparent; border-radius: 14px; padding: 6px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 500; font-size: 14px; }
+.tree svg { width: 100%; max-width: 88px; height: auto; }
+.tree[aria-pressed="true"] { border-color: var(--accent); background: var(--surface); }
+.forest { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; margin-top: 4px; }
+.plot { background: linear-gradient(var(--sky1), var(--sky2)); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+.plot svg { width: 100%; height: auto; display: block; }
+.plot small { flex: 1; display: block; padding: 6px 8px; background: var(--surface); border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.3; }
+.plot small b { color: var(--ink); font-weight: 600; }
+.empty { color: var(--muted); border: 2px dashed var(--line); border-radius: 14px; padding: 28px 16px; text-align: center; grid-column: 1 / -1; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.link { background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 4px; font-size: 14px; }
+.gr1 { fill: var(--ground); } .gr2 { fill: var(--ground2); }
+@media (prefers-reduced-motion: no-preference) { .bar i { transition: width 0.4s linear; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Тихая роща</h1>
+      <p class="sub">Запусти таймер, дерево растёт, пока ты занят делом.</p>
+    </div>
+    <div class="stats" aria-live="polite">
+      <div class="stat"><b id="stToday">0</b><span>деревьев сегодня</span></div>
+      <div class="stat"><b id="stMin">0</b><span>минут в фокусе</span></div>
+      <div class="stat"><b id="stAll">0</b><span>всего в лесу</span></div>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="card stage" aria-label="Таймер">
+      <div class="sky"><svg id="stage" viewBox="0 0 200 200" role="img" aria-label="Растущее дерево"></svg></div>
+      <div class="panel">
+        <div class="clock" id="clock" role="timer">25:00</div>
+        <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+        <p class="msg" id="msg"></p>
+        <div class="chips" id="chips"></div>
+        <button class="go" id="go" type="button">Посадить и начать</button>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Выбор дерева">
+      <h2>Какое дерево сажаем?</h2>
+      <p class="hint">Выбор доступен, пока таймер остановлен.</p>
+      <div class="picker" id="picker"></div>
+    </section>
+  </div>
+
+  <section class="card" aria-label="Мой лес">
+    <div class="row">
+      <h2>Мой лес</h2>
+      <button class="link" id="clear" type="button">Очистить лес</button>
+    </div>
+    <p class="hint">Каждый сеанс оставляет в лесу дерево. Если остановить таймер раньше, дерево так и останется молодым.</p>
+    <div class="forest" id="forest"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var TREES = {
+    oak: { name: "Дуб", topY: 100,
+      trunk: '<path d="M91 180 C95 158 96 130 96 100 L104 100 C104 130 105 158 109 180Z" fill="#7a5233"/><path d="M101 180 C102 150 102 125 102 100 L104 100 C104 130 105 158 109 180Z" fill="#5f3f26" opacity=".55"/><path d="M96 132 L80 114 M104 126 L121 108" stroke="#7a5233" stroke-width="4" stroke-linecap="round"/>',
+      crown: '<circle cx="70" cy="86" r="26" fill="#3a8444"/><circle cx="130" cy="86" r="26" fill="#3a8444"/><circle cx="100" cy="68" r="36" fill="#3f8f4a"/><circle cx="84" cy="50" r="24" fill="#4a9f55"/><circle cx="118" cy="48" r="24" fill="#4a9f55"/><circle cx="92" cy="58" r="12" fill="#63b86c" opacity=".6"/><circle cx="122" cy="72" r="9" fill="#63b86c" opacity=".6"/><circle cx="62" cy="84" r="8" fill="#2f7239" opacity=".5"/>' },
+    pine: { name: "Ель", topY: 146,
+      trunk: '<rect x="95" y="146" width="10" height="34" fill="#6b4a2f"/>',
+      crown: '<path d="M100 66 L148 146 L52 146Z" fill="#2a5f45"/><path d="M100 40 L136 104 L64 104Z" fill="#2f6b4f"/><path d="M100 16 L125 68 L75 68Z" fill="#357a58"/><path d="M100 66 L100 146 L148 146Z" fill="#000" opacity=".12"/><path d="M100 40 L100 104 L136 104Z" fill="#000" opacity=".12"/><path d="M100 16 L100 68 L125 68Z" fill="#000" opacity=".12"/>' },
+    birch: { name: "Берёза", topY: 95,
+      trunk: '<path d="M94 180 C96 150 95 125 97 95 L104 95 C105 125 104 150 107 180Z" fill="#f1efe8"/><g fill="#3b3b3b"><rect x="95" y="162" width="6" height="2.5" rx="1"/><rect x="101" y="146" width="5" height="2.5" rx="1"/><rect x="96" y="128" width="6" height="2.5" rx="1"/><rect x="99" y="112" width="4" height="2.5" rx="1"/></g>',
+      crown: '<ellipse cx="76" cy="78" rx="20" ry="24" fill="#7db85c"/><ellipse cx="126" cy="78" rx="21" ry="24" fill="#7db85c"/><ellipse cx="100" cy="62" rx="30" ry="34" fill="#8fc26a"/><ellipse cx="100" cy="42" rx="20" ry="22" fill="#a3cf7a"/><ellipse cx="90" cy="56" rx="9" ry="12" fill="#b6dc8c" opacity=".7"/><path d="M70 98 q-2 12 0 20 M132 98 q2 12 0 18 M100 94 q0 12 -2 18" stroke="#7db85c" stroke-width="3" fill="none" stroke-linecap="round"/>' },
+    sakura: { name: "Сакура", topY: 100,
+      trunk: '<path d="M93 180 C97 160 92 140 98 118 C100 110 100 105 100 100 L106 100 C106 112 108 125 106 140 C105 158 110 170 109 180Z" fill="#5a3b32"/><path d="M98 125 Q80 115 72 98 M104 118 Q122 108 130 92" stroke="#5a3b32" stroke-width="4" fill="none" stroke-linecap="round"/>',
+      crown: '<circle cx="68" cy="88" r="24" fill="#f6b8cc"/><circle cx="132" cy="86" r="26" fill="#f6b8cc"/><circle cx="100" cy="72" r="34" fill="#f4a8c0"/><circle cx="84" cy="52" r="22" fill="#f9c9d8"/><circle cx="120" cy="50" r="22" fill="#f9c9d8"/><g fill="#fff0f5"><circle cx="92" cy="66" r="3.5"/><circle cx="116" cy="78" r="3"/><circle cx="72" cy="90" r="3"/><circle cx="126" cy="54" r="3"/><circle cx="86" cy="42" r="2.5"/><circle cx="140" cy="92" r="2.5"/></g>' },
+    maple: { name: "Клён", topY: 100,
+      trunk: '<path d="M91 180 C95 158 96 130 96 100 L104 100 C104 130 105 158 109 180Z" fill="#6b4630"/><path d="M96 130 L82 110 M104 124 L120 106" stroke="#6b4630" stroke-width="4" stroke-linecap="round"/>',
+      crown: '<circle cx="72" cy="88" r="24" fill="#e8802f"/><circle cx="130" cy="86" r="26" fill="#c93f2a"/><circle cx="100" cy="70" r="34" fill="#d9552b"/><circle cx="86" cy="50" r="22" fill="#f0a23a"/><circle cx="118" cy="52" r="22" fill="#e8802f"/><circle cx="94" cy="62" r="9" fill="#f5c04e" opacity=".7"/><circle cx="124" cy="76" r="7" fill="#f0a23a" opacity=".7"/><circle cx="156" cy="150" r="3" fill="#d9552b"/><circle cx="44" cy="160" r="3" fill="#e8802f"/>' },
+    palm: { name: "Пальма", topY: 92,
+      trunk: '<path d="M97 180 Q111 140 100 92" fill="none" stroke="#9c7248" stroke-width="9" stroke-linecap="round"/><path d="M97 180 Q111 140 100 92" fill="none" stroke="#6f4f30" stroke-width="9" stroke-dasharray="1.5 6"/>',
+      crown: '<path d="M100 92 C106 66 128 44 150 40 C130 56 116 68 100 92Z" fill="#2f8a4a"/><path d="M100 92 C94 66 72 44 50 40 C70 56 84 68 100 92Z" fill="#2f8a4a"/><path d="M100 92 C112 62 142 58 164 82 C138 74 118 80 100 92Z" fill="#3f9a52"/><path d="M100 92 C88 62 58 58 36 82 C62 74 82 80 100 92Z" fill="#3f9a52"/><path d="M100 92 C92 66 96 40 100 26 C106 42 108 66 100 92Z" fill="#4aa85c"/><path d="M100 92 C120 90 146 100 156 122 C136 108 118 100 100 92Z" fill="#2f8a4a"/><path d="M100 92 C80 90 54 100 44 122 C64 108 82 100 100 92Z" fill="#2f8a4a"/><circle cx="95" cy="97" r="5" fill="#5a3b24"/><circle cx="106" cy="98" r="5" fill="#6b4630"/>' },
+    cactus: { name: "Кактус", topY: 90,
+      trunk: '<path d="M90 140 H72 V116 M110 128 H128 V104" stroke="#4f9b5d" stroke-width="14" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="88" y="90" width="24" height="90" rx="12" fill="#5aa968"/><path d="M100 96 V180 M94 100 V180 M106 100 V180" stroke="#3d8450" stroke-width="1.5" opacity=".6"/><circle cx="100" cy="88" r="6" fill="#f48fb1"/><circle cx="100" cy="88" r="2.5" fill="#ffe082"/>',
+      crown: '' }
+  };
+  var ORDER = ["oak", "pine", "birch", "sakura", "maple", "palm", "cactus"];
+  var KEY = "quiet-grove-v1";
+
+  var S = { forest: [], type: "oak", dur: 25, run: null };
+  try { var saved = JSON.parse(localStorage.getItem(KEY) || "null"); if (saved) { S.forest = saved.forest || []; S.type = TREES[saved.type] ? saved.type : "oak"; S.dur = saved.dur || 25; S.run = saved.run || null; } } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var clamp = function (x) { return Math.max(0, Math.min(1, x)); };
+  var ease = function (x) { return 1 - Math.pow(1 - x, 2); };
+
+  function treeGroup(type, g) {
+    var t = TREES[type];
+    if (g <= 0) return '<ellipse cx="100" cy="179" rx="4" ry="2.6" fill="#6b4a2f"/>';
+    var gT = 0.07 + 0.93 * ease(clamp(g / 0.75));
+    var gC = ease(clamp((g - 0.18) / 0.82));
+    var topNow = 180 - (180 - t.topY) * gT;
+    var s = '<g transform="translate(100 180) scale(' + gT.toFixed(4) + ') translate(-100 -180)">' + t.trunk + '</g>';
+    if (t.crown && gC > 0.002) {
+      s += '<g transform="translate(100 ' + topNow.toFixed(2) + ') scale(' + gC.toFixed(4) + ') translate(-100 ' + (-t.topY) + ')">' + t.crown + '</g>';
+    }
+    var so = 1 - clamp((g - 0.15) / 0.2);
+    if (so > 0.01 && type !== "cactus") {
+      s += '<g transform="translate(100 ' + topNow.toFixed(2) + ')" opacity="' + so.toFixed(2) + '"><ellipse cx="-6" cy="-2" rx="7" ry="3.2" transform="rotate(-28 -6 -2)" fill="#6cc17f"/><ellipse cx="6" cy="-3" rx="7" ry="3.2" transform="rotate(28 6 -3)" fill="#58b36d"/></g>';
+    }
+    return s;
+  }
+  function ground() { return '<ellipse class="gr2" cx="100" cy="186" rx="92" ry="12"/><ellipse class="gr1" cx="100" cy="182" rx="86" ry="10"/>'; }
+  function scene(type, g, ghost) {
+    return ground() + (ghost ? '<g opacity=".16">' + treeGroup(type, 1) + '</g>' : '') + treeGroup(type, g);
+  }
+  function svgTag(inner, cls) { return '<svg viewBox="0 0 200 200" aria-hidden="true"' + (cls ? ' class="' + cls + '"' : '') + '>' + inner + '</svg>'; }
+
+  function fmt(sec) { sec = Math.max(0, Math.ceil(sec)); var m = Math.floor(sec / 60), s = sec % 60; return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s; }
+  function sameDay(a, b) { return new Date(a).toDateString() === new Date(b).toDateString(); }
+
+  function renderChips() {
+    var running = !!S.run, h = "";
+    [15, 25, 45, 60].forEach(function (m) {
+      h += '<button class="chip" type="button" data-m="' + m + '" aria-pressed="' + (S.dur === m) + '"' + (running ? " disabled" : "") + '>' + m + ' мин</button>';
+    });
+    h += '<label class="custom" for="customMin">своё <input id="customMin" type="number" min="1" max="180" value="' + S.dur + '"' + (running ? " disabled" : "") + '> мин</label>';
+    $("chips").innerHTML = h;
+  }
+  function renderPicker() {
+    var running = !!S.run, h = "";
+    ORDER.forEach(function (k) {
+      h += '<button class="tree" type="button" data-t="' + k + '" aria-pressed="' + (S.type === k) + '"' + (running ? " disabled" : "") + '>' + svgTag(scene(k, 1)) + TREES[k].name + '</button>';
+    });
+    $("picker").innerHTML = h;
+  }
+  function renderForest() {
+    var f = $("forest");
+    if (!S.forest.length) { f.innerHTML = '<div class="empty">Здесь пока пусто. Запусти таймер, и первое дерево появится в лесу.</div>'; return; }
+    var h = "";
+    S.forest.slice().reverse().forEach(function (r) {
+      var d = new Date(r.ts), when = d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) + ", " + d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+      h += '<div class="plot">' + svgTag(scene(r.type, r.g)) + '<small><b>' + TREES[r.type].name + '</b> · ' + r.min + ' мин' + (r.g < 0.995 ? ' · ' + Math.round(r.g * 100) + '%' : '') + '<br>' + when + '</small></div>';
+    });
+    f.innerHTML = h;
+  }
+  function renderStats() {
+    var now = Date.now(), today = 0, mins = 0;
+    S.forest.forEach(function (r) { mins += r.min; if (sameDay(r.ts, now)) today++; });
+    $("stToday").textContent = today; $("stMin").textContent = mins; $("stAll").textContent = S.forest.length;
+  }
+  function renderLive() {
+    var g = 0, left = S.dur * 60;
+    if (S.run) {
+      var total = S.run.dur * 60, el = (Date.now() - S.run.start) / 1000;
+      g = clamp(el / total); left = total - el;
+      $("msg").textContent = "Дерево выросло на " + Math.round(g * 100) + "%. Занимайся делами.";
+    }
+    $("stage").innerHTML = scene(S.run ? S.run.type : S.type, g, !S.run);
+    $("clock").textContent = fmt(left);
+    $("bar").style.width = (g * 100) + "%";
+    document.title = S.run ? fmt(left) + " · Тихая роща" : "Тихая роща";
+  }
+  function renderControls() {
+    var go = $("go");
+    go.textContent = S.run ? "Остановить" : "Посадить и начать";
+    go.className = "go" + (S.run ? " stop" : "");
+    if (!S.run && !$("msg").dataset.keep) $("msg").textContent = "Выбери дерево и время, затем нажми кнопку.";
+    renderChips(); renderPicker();
+  }
+
+  function chime() {
+    try {
+      var C = window.AudioContext || window.webkitAudioContext, a = new C();
+      [523.25, 659.25, 783.99].forEach(function (f, i) {
+        var o = a.createOscillator(), g = a.createGain(), t = a.currentTime + i * 0.18;
+        o.type = "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.18, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+        o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 1);
+      });
+    } catch (e) {}
+  }
+  function setMsg(t) { $("msg").textContent = t; $("msg").dataset.keep = "1"; }
+
+  function start() {
+    $("msg").dataset.keep = "";
+    S.run = { start: Date.now(), dur: S.dur, type: S.type };
+    save(); renderControls(); renderLive();
+  }
+  function finish(done) {
+    var r = S.run; if (!r) return;
+    var el = (Date.now() - r.start) / 1000, g = done ? 1 : clamp(el / (r.dur * 60));
+    S.run = null;
+    if (done || el >= 60) {
+      S.forest.push({ id: Date.now(), type: r.type, g: g, min: done ? r.dur : Math.max(1, Math.round(el / 60)), ts: Date.now() });
+      setMsg(done ? "Дерево выросло и осталось в лесу. Можно сделать перерыв." : "Дерево перестало расти на " + Math.round(g * 100) + "% и осталось в лесу.");
+    } else {
+      setMsg("Прошло меньше минуты, росток не прижился. Попробуй ещё раз.");
+    }
+    if (done) chime();
+    save(); renderControls(); renderLive(); renderForest(); renderStats();
+  }
+  function tick() {
+    if (!S.run) return;
+    if ((Date.now() - S.run.start) / 1000 >= S.run.dur * 60) finish(true); else renderLive();
+  }
+
+  $("go").addEventListener("click", function () { S.run ? finish(false) : start(); });
+  $("chips").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-m]"); if (!b || S.run) return;
+    S.dur = +b.dataset.m; save(); renderChips(); renderLive();
+  });
+  $("chips").addEventListener("change", function (e) {
+    if (e.target.id !== "customMin" || S.run) return;
+    var v = Math.round(+e.target.value); if (!(v >= 1)) v = 25; S.dur = Math.min(180, v); save(); renderChips(); renderLive();
+  });
+  $("picker").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-t]"); if (!b || S.run) return;
+    S.type = b.dataset.t; save(); renderPicker(); renderLive();
+  });
+  var armed = false, armTimer;
+  $("clear").addEventListener("click", function () {
+    var b = $("clear");
+    if (!S.forest.length) return;
+    if (!armed) { armed = true; b.textContent = "Точно удалить все деревья? Нажми ещё раз"; armTimer = setTimeout(function () { armed = false; b.textContent = "Очистить лес"; }, 4000); return; }
+    clearTimeout(armTimer); armed = false; b.textContent = "Очистить лес";
+    S.forest = []; save(); renderForest(); renderStats();
+  });
+
+  renderControls(); renderLive(); renderForest(); renderStats();
+  if (S.run) tick();
+  setInterval(tick, 500);
+  document.addEventListener("visibilitychange", tick);
+})();
+</script>
+
+</html>
